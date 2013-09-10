@@ -9,7 +9,7 @@ local Monocle = {
 	canvas = _lg.newCanvas()
 }
 
-function Monocle:draw(x, y, grid, tileSize, debug, draw_mode)
+function Monocle:draw(x, y, grid, tileSize, debug, draw_mode, alpha)
 	if self.round(x,5) == self.round(x) then
 		x = x + 0.00001
 	end
@@ -24,6 +24,7 @@ function Monocle:draw(x, y, grid, tileSize, debug, draw_mode)
 	self.grid = grid
 	self.tileSize = tileSize
 	self.debug = debug or false
+	self.alpha = tonumber(alpha) or 255
 	self.draw_mode = draw_mode or true
 	self.edges = index()
 	self:get_forward_edges()
@@ -242,7 +243,7 @@ function Monocle:draw_triangles()
 	_lg.setColor(0,0,0)
 	_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
 	_lg.setBlendMode('alpha')
-	_lg.setColor(255,255,255)
+	_lg.setColor(255,255,255, self.alpha)
 
 	--Increase this for large maps
 	local TOLERANCE = 500
