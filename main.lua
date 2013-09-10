@@ -22,26 +22,39 @@ end
 
 function love.draw()
 	_lg.setBlendMode('alpha')
+	
+				_lg.setColor(100,100,100)
 	for i = 1, #level do
 		for j = 1, #level[i] do
-			if level[i][j].solid then
-				_lg.setColor(50,50,200)
-			else 
-				_lg.setColor(100,100,100)
+			if not level[i][j].solid then
+				_lg.rectangle('fill', j*tileSize, i*tileSize, tileSize, tileSize)
 			end
-			_lg.rectangle('fill', j*tileSize, i*tileSize, tileSize, tileSize)
 		end
 	end
+	
 	player:draw()
 	_lg.setCanvas()
 	_lg.draw(sprite_canvas)
 	_lg.setCanvas()
-	lights:draw(player.x,player.y,level,tileSize, DEBUG, draw_monocle, 100)
+	lights:draw(player.x,player.y,level,tileSize, DEBUG, draw_monocle, 255)
 	_lg.setBlendMode('multiplicative')
 	if draw_monocle then
+		love.graphics.setPixelEffect(gaussian)
 		_lg.draw(lights.canvas)
+		love.graphics.setPixelEffect()
 	end
 	_lg.setBlendMode('alpha')
+	
+				_lg.setColor(50,50,200)
+	for i = 1, #level do
+		for j = 1, #level[i] do
+			if level[i][j].solid then
+			_lg.rectangle('fill', j*tileSize, i*tileSize, tileSize, tileSize)
+			end
+		end
+	end
+	
+	
 	_lg.setColor(255,255,255)
 	_lg.print('X:' .. player.x .. ';Y:' .. player.y, 0,0)
 	_lg.print('Press "b" to toggle debug mode',0,12)

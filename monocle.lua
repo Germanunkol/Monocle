@@ -3,6 +3,8 @@ local index = require 'index'
 local tuple = require 'tuple'
 
 local _lg = love.graphics
+local gaussianV = love.graphics.newPixelEffect(love.filesystem.read("gaussianV.glsl"))
+local gaussianH = love.graphics.newPixelEffect(love.filesystem.read("gaussianH.glsl"))
 
 local Monocle = {
 	edges = index(),
@@ -31,7 +33,7 @@ function Monocle:draw(x, y, grid, tileSize, debug, draw_mode, alpha)
 	self:link_edges()
 	self:add_projections()
 	if self.draw_mode then
-		self:draw_triangles()
+		self:draw_triangles()		
 	end
 	if self.debug then
 		self:draw_debug()
@@ -263,7 +265,20 @@ function Monocle:draw_triangles()
 		count = count + 1
 	until current_edge == start[1] or count > TOLERANCE
 
+	
+	self.gaussCanvas = _lg.newCanvas(self.canvas:getWidth(), self.canvas:getHeight())
+
+	_lg.setCanvas(self.gaussCanvas)
+	_lg.setPixelEffect( gaussianH )
+	_lg.draw(self.canvas)
+	self.canvas:clear()
+	
+	_lg.setCanvas(self.canvas)
+	_lg.setPixelEffect( gaussianV )
+	_lg.draw(self.gaussCanvas)
+	
 	_lg.setCanvas()
+	_lg.setPixelEffect()
 end
 
 function Monocle:get_closest_edge()
