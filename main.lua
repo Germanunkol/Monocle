@@ -36,7 +36,7 @@ function love.draw()
 	_lg.setCanvas()
 	_lg.draw(sprite_canvas)
 	_lg.setCanvas()
-	lights:draw(player.x,player.y,level,tileSize, DEBUG, draw_monocle, 255)
+	lights:draw(player.x,player.y,level,tileSize, DEBUG, draw_monocle, 150)
 	_lg.setBlendMode('multiplicative')
 	if draw_monocle then
 		love.graphics.setPixelEffect(gaussian)
