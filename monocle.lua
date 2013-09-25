@@ -3,15 +3,38 @@ local index = require 'index'
 local tuple = require 'tuple'
 
 local _lg = love.graphics
-local gaussianV = love.graphics.newPixelEffect(love.filesystem.read("gaussianV.glsl"))
-local gaussianH = love.graphics.newPixelEffect(love.filesystem.read("gaussianH.glsl"))
 
 local Monocle = {
 	edges = index(),
-	canvas = _lg.newCanvas()
+	canvas = nil
 }
 
-function Monocle:draw(x, y, grid, tileSize, debug, draw_mode, alpha)
+function Monocle:init( useCanvas, gaussianBlur )
+	self.useCanvas = useCanvas
+	
+	if not gaussianBlur or gaussianBlur == 0 then
+		self.blur = false
+	else
+		self.blur = true
+		self.blurAmount = tonumber(gaussianBlur)
+	end
+	
+	if self.useCanvas then
+		self.canvas = _lg.newCanvas()
+	end
+	if self.blur  then
+		self.gaussianV = _lg.newPixelEffect(love.filesystem.read("gaussianV.glsl"))
+		self.gaussianH = _lg.newPixelEffect(love.filesystem.read("gaussianH.glsl"))
+		self.gaussianV:send("amount", self.blurAmount)
+		self.gaussianV:send("screenSize", self.canvas:getWidth())
+		self.gaussianH:send("amount", self.blurAmount)
+		self.gaussianH:send("screenSize", self.canvas:getWidth())
+		
+		self.gaussCanvas = _lg.newCanvas(self.canvas:getWidth(), self.canvas:getHeight())
+	end
+end
+
+function Monocle:update(x, y, grid, tileSize, alpha, debug )
 	if self.round(x,5) == self.round(x) then
 		x = x + 0.00001
 	end
@@ -27,16 +50,26 @@ function Monocle:draw(x, y, grid, tileSize, debug, draw_mode, alpha)
 	self.tileSize = tileSize
 	self.debug = debug or false
 	self.alpha = tonumber(alpha) or 255
-	self.draw_mode = draw_mode or true
+	--self.draw_mode = draw_mode or true
 	self.edges = index()
 	self:get_forward_edges()
 	self:link_edges()
 	self:add_projections()
-	if self.draw_mode then
+	if self.useCanvas then	-- draw once only:
 		self:draw_triangles()		
 	end
+end
+
+function Monocle:draw()
 	if self.debug then
 		self:draw_debug()
+	else
+		if self.canvas then	
+			love.graphics.setPixelEffect(gaussian)
+			_lg.draw( self.canvas )
+		else
+			self:draw_triangles()		
+		end
 	end
 end
 
@@ -241,7 +274,9 @@ function Monocle:add_projection_edge(e, x1,y1, isNext)
 end
 
 function Monocle:draw_triangles()
-	_lg.setCanvas(self.canvas)
+	if self.useCanvas then
+		_lg.setCanvas(self.canvas)
+	end
 	_lg.setColor(0,0,0)
 	_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
 	_lg.setBlendMode('alpha')
@@ -265,20 +300,21 @@ function Monocle:draw_triangles()
 		count = count + 1
 	until current_edge == start[1] or count > TOLERANCE
 
+	if self.blur then
+		_lg.setCanvas(self.gaussCanvas)
+		_lg.setPixelEffect( gaussianH )
+		_lg.draw(self.canvas)
+		self.canvas:clear()
 	
-	self.gaussCanvas = _lg.newCanvas(self.canvas:getWidth(), self.canvas:getHeight())
-
-	_lg.setCanvas(self.gaussCanvas)
-	_lg.setPixelEffect( gaussianH )
-	_lg.draw(self.canvas)
-	self.canvas:clear()
+		_lg.setCanvas(self.canvas)
+		_lg.setPixelEffect( gaussianV )
+		_lg.draw(self.gaussCanvas)
+		_lg.setPixelEffect()
+	end
 	
-	_lg.setCanvas(self.canvas)
-	_lg.setPixelEffect( gaussianV )
-	_lg.draw(self.gaussCanvas)
-	
-	_lg.setCanvas()
-	_lg.setPixelEffect()
+	if self.useCanvas then
+		_lg.setCanvas()
+	end
 end
 
 function Monocle:get_closest_edge()

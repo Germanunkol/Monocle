@@ -1,0 +1,78 @@
+
+//number d = 0;
+number blurSize = 25;
+vec4 effect(vec4 color, Image texture, vec2 vTexCoord, vec2 pixel_coords)
+{
+	vec4 sum = vec4(0.0);
+	//number d = distance(vTexCoord, mousePos/screenSize);
+	//number blurSize = clamp(1/d/screenSize.x, 0, 1.0);
+	// blur in y (vertical)
+	// take nine samples, with the distance blurSize between them
+	sum += texture2D(texture, vec2(vTexCoord.x - 4.0*blurSize, vTexCoord.y)) * 0.05;
+	sum += texture2D(texture, vec2(vTexCoord.x - 3.0*blurSize, vTexCoord.y)) * 0.09;
+	sum += texture2D(texture, vec2(vTexCoord.x - 2.0*blurSize, vTexCoord.y)) * 0.12;
+	sum += texture2D(texture, vec2(vTexCoord.x - blurSize, vTexCoord.y)) * 0.15;
+	sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y)) * 0.16;
+	sum += texture2D(texture, vec2(vTexCoord.x + blurSize, vTexCoord.y)) * 0.15;
+	sum += texture2D(texture, vec2(vTexCoord.x + 2.0*blurSize, vTexCoord.y)) * 0.12;
+	sum += texture2D(texture, vec2(vTexCoord.x + 3.0*blurSize, vTexCoord.y)) * 0.09;
+	sum += texture2D(texture, vec2(vTexCoord.x + 4.0*blurSize, vTexCoord.y)) * 0.05;
+	
+	return sum;
+}
+/*
+		]]
+	blur2 = love.graphics.newPixelEffect [[
+		extern vec2 screenSize;
+		extern vec2 mousePos;
+		
+		vec4 effect(vec4 color, Image texture, vec2 vTexCoord, vec2 pixel_coords)
+		{
+			vec4 sum = vec4(0.0);
+			number d = distance(vTexCoord, vec2(mousePos.x, 1-mousePos.y)/screenSize);
+			number blurSize = clamp(1/d/screenSize.y, 0, 1.0);
+
+			// blur in y (vertical)
+			// take nine samples, with the distance blurSize between them
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y - 4.0*blurSize)) * 0.05;
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y - 3.0*blurSize)) * 0.09;
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y - 2.0*blurSize)) * 0.12;
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y- blurSize)) * 0.15;
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y)) * 0.16;
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y + blurSize)) * 0.15;
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y + 2.0*blurSize)) * 0.12;
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y + 3.0*blurSize)) * 0.09;
+			sum += texture2D(texture, vec2(vTexCoord.x, vTexCoord.y + 4.0*blurSize)) * 0.05;
+
+			return sum;
+		}
+		
+function love.draw()
+
+	love.graphics.setCanvas(canvas)
+    -- LOOK AT THE PRETTY COLORS!
+    love.graphics.setPixelEffect(blur1)
+    love.graphics.draw(img, 0, 0)
+    --love.graphics.rectangle('fill', 10,10, love.graphics.getWidth()-20, love.graphics.getHeight()-20)
+
+	love.graphics.setCanvas()
+	
+    love.graphics.setPixelEffect()
+    
+    --love.graphics.draw(img, 0, 0)
+    --love.graphics.draw(canvas, 0, love.graphics.getHeight()/2)
+    love.graphics.setPixelEffect(blur2)
+    --love.graphics.draw(canvas, love.graphics.getWidth()/2, love.graphics.getHeight()/2)
+    love.graphics.draw(canvas, 0,0)
+end
+
+local t = 0
+function love.update(dt)
+	t = t + dt
+	local a, b = love.mouse.getPosition()
+	blur1:send("mousePos", {a,b})
+	blur2:send("mousePos", {a,b})
+end
+
+*/
+

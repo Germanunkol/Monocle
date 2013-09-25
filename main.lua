@@ -1,4 +1,5 @@
 lights = require('monocle')
+lights:init( true, 5 )
 
 local _lg = love.graphics
 local _mouse = love.mouse
@@ -18,12 +19,15 @@ end
 
 function love.update(dt)
 	player:update(dt, level)
+	lights:update(player.x,player.y,level,tileSize, 150, DEBUG )
 end
 
 function love.draw()
 	_lg.setBlendMode('alpha')
 	
-				_lg.setColor(100,100,100)
+	
+	-- draw background:
+	_lg.setColor(100,100,100)
 	for i = 1, #level do
 		for j = 1, #level[i] do
 			if not level[i][j].solid then
@@ -36,16 +40,11 @@ function love.draw()
 	_lg.setCanvas()
 	_lg.draw(sprite_canvas)
 	_lg.setCanvas()
-	lights:draw(player.x,player.y,level,tileSize, DEBUG, draw_monocle, 150)
-	_lg.setBlendMode('multiplicative')
-	if draw_monocle then
-		love.graphics.setPixelEffect(gaussian)
-		_lg.draw(lights.canvas)
-		love.graphics.setPixelEffect()
-	end
-	_lg.setBlendMode('alpha')
 	
-				_lg.setColor(50,50,200)
+	lights:draw()
+	
+	-- draw walls:
+	_lg.setColor(50,50,200)
 	for i = 1, #level do
 		for j = 1, #level[i] do
 			if level[i][j].solid then

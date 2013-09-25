@@ -1,6 +1,6 @@
 
 extern number amount = 1.0;
-extern number screenSize = 512.0;
+number screenSize = 512.0;
 number blurSize;
 vec4 effect(vec4 color, Image texture, vec2 vTexCoord, vec2 pixel_coords)
 {
