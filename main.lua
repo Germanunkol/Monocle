@@ -1,10 +1,10 @@
-lights = require('monocle')
-lights:init( true, 5 )
+monocle = require('monocle')
 
 local _lg = love.graphics
 local _mouse = love.mouse
 pi = math.pi
 
+local moreLights = {}
 
 function love.load()
 	map_height = 12
@@ -12,22 +12,52 @@ function love.load()
 	tileSize = 40
 	player = require('player')
 	level = GenerateMap(map_width,map_height)
-	sprite_canvas = _lg.newCanvas()
 	DEBUG = false
-	draw_monocle = true
+	monocle:init( true, 0,0,0,230 )
+	monocle:setGrid( level, tileSize )
+	playerlight = monocle:addLight( 2, 2, 255, 255, 255, 100)
 end
 
 function love.update(dt)
 	player:update(dt, level)
-	lights:update(player.x,player.y,level,tileSize, 150, DEBUG )
+	playerlight.x, playerlight.y = player.x, player.y
+	monocle:update( DEBUG )
+end
+
+function toggleMoreLights()
+
+	if #moreLights == 0 then
+		--local l = monocle:addLight( 3, 2, 255, 255, 255, 60)
+		--moreLights[#moreLights+1] = l
+		
+		l = monocle:addLight( 8, 8.5, 255, 150, 150, 100)
+		moreLights[#moreLights+1] = l
+		
+		
+		--l = monocle:addLight( 3, 2, 255, 255, 255, 100 )
+		--moreLights[#moreLights] = l
+	else
+		for k, l in pairs(moreLights) do
+			monocle:removeLight(l)
+			moreLights[k] = nil
+		end
+	end
+end
+
+function toggleBlur()
+	if not blur then
+		monocle:setBlur( 1 )
+		blur = true
+	else
+		blur = false
+		monocle:setBlur( 0 )
+	end
 end
 
 function love.draw()
-	_lg.setBlendMode('alpha')
 	
-	
-	-- draw background:
-	_lg.setColor(100,100,100)
+	-- draw background:#
+	_lg.setColor(100,100,100, 255)
 	for i = 1, #level do
 		for j = 1, #level[i] do
 			if not level[i][j].solid then
@@ -37,11 +67,8 @@ function love.draw()
 	end
 	
 	player:draw()
-	_lg.setCanvas()
-	_lg.draw(sprite_canvas)
-	_lg.setCanvas()
 	
-	lights:draw()
+	monocle:draw()
 	
 	-- draw walls:
 	_lg.setColor(50,50,200)
@@ -53,22 +80,27 @@ function love.draw()
 		end
 	end
 	
-	
 	_lg.setColor(255,255,255)
 	_lg.print('X:' .. player.x .. ';Y:' .. player.y, 0,0)
-	_lg.print('Press "b" to toggle debug mode',0,12)
+	_lg.print('Press "d" to toggle debug mode',0,12)
 	_lg.print('Press "n" to toggle Monocle mode',0,24)
 	_lg.print('Press "t" to teleport player to (3,3)',0,36)
+	_lg.print('Press "l" to toggle additional light(s)',0,48)
+	_lg.print('Press "b" to toggle blur',0,60)
 end
 
 function love.keypressed(key,code)
-	if key == 'b' then
+	if key == 'd' then
 		DEBUG = not DEBUG
 	elseif key == 'n'then
 		draw_monocle = not draw_monocle
 	elseif key == 't' then
 		player.x=3
 		player.y=3
+	elseif key == 'l' then
+		toggleMoreLights()
+	elseif key == 'b' then
+		toggleBlur()
 	end
 end
 

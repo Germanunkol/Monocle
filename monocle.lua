@@ -6,23 +6,44 @@ local _lg = love.graphics
 
 local Monocle = {
 	edges = index(),
-	canvas = nil
+	canvas = nil,
+	lights = {}
 }
 
-function Monocle:init( useCanvas, gaussianBlur )
+function Monocle:init( useCanvas, r, g, b, a )
 	self.useCanvas = useCanvas
-	
-	if not gaussianBlur or gaussianBlur == 0 then
-		self.blur = false
-	else
-		self.blur = true
-		self.blurAmount = tonumber(gaussianBlur)
-	end
+	self.blur = false
 	
 	if self.useCanvas then
 		self.canvas = _lg.newCanvas()
 	end
-	if self.blur  then
+	
+	self.shadow = {
+		r=r or 0,
+		g=g or 0,
+		b=b or 0,
+		a=a or 255,
+	}
+end
+
+function Monocle:setGrid( grid, tileSize )
+	if not tonumber(tileSize) then
+		error("Wrong usage of Monocle:setGrid, second argument needs to give tileSize!")
+	end
+	self.grid = grid
+	self.tileSize = tileSize
+end
+
+function Monocle:setBlur( blurAmount )
+	if not blurAmount or blurAmount == 0 then
+		self.blur = false
+	elseif self.useCanvas then	-- only allow blurring when canvas is enabled, too:
+		self.blur = true
+		self.blurAmount = tonumber(blurAmount)
+	end
+	
+	if self.blur then
+		--self.blurAmount = 0
 		self.gaussianV = _lg.newPixelEffect(love.filesystem.read("gaussianV.glsl"))
 		self.gaussianH = _lg.newPixelEffect(love.filesystem.read("gaussianH.glsl"))
 		self.gaussianV:send("amount", self.blurAmount)
@@ -34,43 +55,135 @@ function Monocle:init( useCanvas, gaussianBlur )
 	end
 end
 
-function Monocle:update(x, y, grid, tileSize, alpha, debug )
-	if self.round(x,5) == self.round(x) then
-		x = x + 0.00001
+function Monocle:addLight( x, y, r, g, b, a )
+	local light = {
+		x=x or 1,
+		y=y or 1,
+		r=r or 255,
+		g=g or 255,
+		b=b or 255,
+		a=a or 255,
+	}
+	print("New light @:", light.x, light.y)
+	self.lights[#self.lights+1] = light
+	return light
+end
+
+function Monocle:removeLight( light )	-- find light in list and remove:
+	for k = 1, #self.lights do
+		if self.lights[k] == light then
+			-- move all other lights in the list up one:
+			for i = k, #self.lights-1 do
+				self.lights[i] = self.lights[i+1]
+			end
+			self.lights[#self.lights] = nil	-- remove last
+			break
+		end
 	end
-	if self.round(y,5) == self.round(y) then
-		y = y + 0.000015
-	end
-	if x - self.round(x) == y - self.round(y) then
-		x = x + 0.000012
-	end
-	self.x = x
-	self.y = y
-	self.grid = grid
-	self.tileSize = tileSize
-	self.debug = debug or false
-	self.alpha = tonumber(alpha) or 255
-	--self.draw_mode = draw_mode or true
-	self.edges = index()
-	self:get_forward_edges()
-	self:link_edges()
-	self:add_projections()
-	if self.useCanvas then	-- draw once only:
-		self:draw_triangles()		
+end
+
+function Monocle:update( debug )
+	
+	if self.useCanvas then
+		self.canvas:clear()
+		_lg.setCanvas(self.canvas)
+		_lg.setColor(self.shadow.r, self.shadow.g, self.shadow.b, self.shadow.a)
+		_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
+		_lg.setCanvas()
+	--[[if self.useCanvas then
+		_lg.setCanvas(self.canvas)	
+		_lg.setColor(0,0,0)
+		_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
+		_lg.setCanvas()
+	end]]--
+		for k = 1, #self.lights do
+		
+			self.x = self.lights[k].x
+			self.y = self.lights[k].y
+	
+			if self.round(self.x,5) == self.round(self.x) then
+				self.x = self.x + 0.00001
+			end
+			if self.round(self.y,5) == self.round(self.y) then
+				self.y = self.y + 0.000015
+			end
+			if self.x - self.round(self.x) ==self. y - self.round(self.y) then
+				self.x = self.x + 0.000012
+			end
+	
+			self.debug = debug or false
+			--self.draw_mode = draw_mode or true
+			self.edges = index()
+			self:get_forward_edges()
+			self:link_edges()
+			self:add_projections()
+			self:draw_triangles( self.lights[k] )
+		end
+	
+		if self.blur then
+			--self.canvas:getImageData():encode("before.png")
+			self.gaussCanvas:clear()
+			_lg.setCanvas(self.gaussCanvas)
+		
+			--_lg.setColor(self.shadow.r, self.shadow.g, self.shadow.b, self.shadow.a)
+			--_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
+			_lg.setPixelEffect( self.gaussianH )
+			_lg.setColor(255,255,255,255)
+			_lg.draw(self.canvas)
+			_lg.setPixelEffect()
+			--self.gaussCanvas:getImageData():encode("gaussianH.png")
+			self.canvas:clear()
+	
+			_lg.setCanvas(self.canvas)
+			--_lg.setColor(self.shadow.r, self.shadow.g, self.shadow.b, self.shadow.a)
+			--_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
+			_lg.setPixelEffect( self.gaussianV )
+			_lg.setColor(255,255,255,255)
+			_lg.draw(self.gaussCanvas)
+			_lg.setPixelEffect()
+			_lg.setCanvas()
+			--self.canvas:getImageData():encode("after.png")
+			--love.event.quit()
+		end
 	end
 end
 
 function Monocle:draw()
+	love.graphics.setColor(255, 255, 255, 255)
+	--_lg.setBlendMode('multiplicative')
 	if self.debug then
 		self:draw_debug()
 	else
-		if self.canvas then	
-			love.graphics.setPixelEffect(gaussian)
+		-- If a canvas has already been calculated, then use this.
+		-- Otherwise, draw triangles:
+		if self.useCanvas then
 			_lg.draw( self.canvas )
 		else
-			self:draw_triangles()		
+			for k = 1, #self.lights do
+		
+				self.x = self.lights[k].x
+				self.y = self.lights[k].y
+	
+				if self.round(self.x,5) == self.round(self.x) then
+					self.x = self.x + 0.00001
+				end
+				if self.round(self.y,5) == self.round(self.y) then
+					self.y = self.y + 0.000015
+				end
+				if self.x - self.round(self.x) ==self. y - self.round(self.y) then
+					self.x = self.x + 0.000012
+				end
+	
+				--self.draw_mode = draw_mode or true
+				self.edges = index()
+				self:get_forward_edges()
+				self:link_edges()
+				self:add_projections()
+				self:draw_triangles( self.lights[k] )
+			end
 		end
 	end
+	--_lg.setBlendMode('alpha')
 end
 
 function Monocle:get_forward_edges()
@@ -273,14 +386,14 @@ function Monocle:add_projection_edge(e, x1,y1, isNext)
 
 end
 
-function Monocle:draw_triangles()
+function Monocle:draw_triangles( l )
 	if self.useCanvas then
 		_lg.setCanvas(self.canvas)
 	end
-	_lg.setColor(0,0,0)
+	--[[_lg.setColor(0,0,0)
 	_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
 	_lg.setBlendMode('alpha')
-	_lg.setColor(255,255,255, self.alpha)
+	]]--
 
 	--Increase this for large maps
 	local TOLERANCE = 500
@@ -288,6 +401,8 @@ function Monocle:draw_triangles()
 	local current_edge = start[1]
 	local count = 0
 
+	_lg.setColor( l.r, l.g, l.b, l.a )
+	--_lg.setColor( 0, 255, 0, 255 )
 	repeat
 		local x1,y1,x2,y2 = unpack(current_edge)
 		_lg.triangle('fill', self.x*self.tileSize,self.y*self.tileSize,
@@ -299,18 +414,6 @@ function Monocle:draw_triangles()
 		end
 		count = count + 1
 	until current_edge == start[1] or count > TOLERANCE
-
-	if self.blur then
-		_lg.setCanvas(self.gaussCanvas)
-		_lg.setPixelEffect( gaussianH )
-		_lg.draw(self.canvas)
-		self.canvas:clear()
-	
-		_lg.setCanvas(self.canvas)
-		_lg.setPixelEffect( gaussianV )
-		_lg.draw(self.gaussCanvas)
-		_lg.setPixelEffect()
-	end
 	
 	if self.useCanvas then
 		_lg.setCanvas()
