@@ -96,30 +96,38 @@ function Monocle:update( debug )
 		_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
 		_lg.setCanvas()
 	end]]--
-		for k = 1, #self.lights do
+	end
+	
+	for k = 1, #self.lights do
+	
+		--light.x = self.lights[k].x
+		--light.y = self.lights[k].y
+
+		if self.round(self.lights[k].x,5) == self.round(self.lights[k].x) then
+			self.lights[k].x = self.lights[k].x + 0.00001
+		end
+		if self.round(self.lights[k].y,5) == self.round(self.lights[k].y) then
+			self.lights[k].y = self.lights[k].y + 0.000015
+		end
+		if self.lights[k].x - self.round(self.lights[k].x) ==
+				self.lights[k]. y - self.round(self.lights[k].y) then
+			self.lights[k].x = self.lights[k].x + 0.000012
+		end
+
+		self.debug = debug or false
+		--self.draw_mode = draw_mode or true
+		self.lights[k].edges = index()
+		self:get_forward_edges( self.lights[k] )
+		self:link_edges( self.lights[k] )
+		self:add_projections( self.lights[k] )
 		
-			self.x = self.lights[k].x
-			self.y = self.lights[k].y
-	
-			if self.round(self.x,5) == self.round(self.x) then
-				self.x = self.x + 0.00001
-			end
-			if self.round(self.y,5) == self.round(self.y) then
-				self.y = self.y + 0.000015
-			end
-			if self.x - self.round(self.x) ==self. y - self.round(self.y) then
-				self.x = self.x + 0.000012
-			end
-	
-			self.debug = debug or false
-			--self.draw_mode = draw_mode or true
-			self.edges = index()
-			self:get_forward_edges()
-			self:link_edges()
-			self:add_projections()
+		if self.useCanvas then
+			-- fill the canvas:
 			self:draw_triangles( self.lights[k] )
 		end
+	end
 	
+	if self.useCanvas then
 		if self.blur then
 			--self.canvas:getImageData():encode("before.png")
 			self.gaussCanvas:clear()
@@ -152,7 +160,7 @@ function Monocle:draw()
 	love.graphics.setColor(255, 255, 255, 255)
 	--_lg.setBlendMode('multiplicative')
 	if self.debug then
-		self:draw_debug()
+		self:draw_debug( self.lights[1] )
 	else
 		-- If a canvas has already been calculated, then use this.
 		-- Otherwise, draw triangles:
@@ -160,25 +168,6 @@ function Monocle:draw()
 			_lg.draw( self.canvas )
 		else
 			for k = 1, #self.lights do
-		
-				self.x = self.lights[k].x
-				self.y = self.lights[k].y
-	
-				if self.round(self.x,5) == self.round(self.x) then
-					self.x = self.x + 0.00001
-				end
-				if self.round(self.y,5) == self.round(self.y) then
-					self.y = self.y + 0.000015
-				end
-				if self.x - self.round(self.x) ==self. y - self.round(self.y) then
-					self.x = self.x + 0.000012
-				end
-	
-				--self.draw_mode = draw_mode or true
-				self.edges = index()
-				self:get_forward_edges()
-				self:link_edges()
-				self:add_projections()
 				self:draw_triangles( self.lights[k] )
 			end
 		end
@@ -186,66 +175,66 @@ function Monocle:draw()
 	--_lg.setBlendMode('alpha')
 end
 
-function Monocle:get_forward_edges()
+function Monocle:get_forward_edges( light )
 	for i, row in ipairs(self.grid) do
 		for j, point in ipairs(row) do
 			if point.solid then
-				if self.x<j and self.grid[i][j-1] and not self.grid[i][j-1].solid then
-					self:add_edge(j,i,j,i+1) --left
-				elseif self.x > j + 1 and self.grid[i][j+1] and not self.grid[i][j+1].solid then
-					self:add_edge(j+1,i+1,j+1,i) --right
+				if light.x<j and self.grid[i][j-1] and not self.grid[i][j-1].solid then
+					self:add_edge(light, j,i,j,i+1) --left
+				elseif light.x > j + 1 and self.grid[i][j+1] and not self.grid[i][j+1].solid then
+					self:add_edge(light, j+1,i+1,j+1,i) --right
 				end
 
-				if self.y < i and self.grid[i-1] and not self.grid[i-1][j].solid then 
-					self:add_edge(j+1,i,j,i) -- top
-				elseif self.y > i + 1 and self.grid[i+1] and not self.grid[i+1][j].solid then
-					self:add_edge(j,i+1,j+1,i+1) --bottom
+				if light.y < i and self.grid[i-1] and not self.grid[i-1][j].solid then 
+					self:add_edge(light, j+1,i,j,i) -- top
+				elseif light.y > i + 1 and self.grid[i+1] and not self.grid[i+1][j].solid then
+					self:add_edge(light, j,i+1,j+1,i+1) --bottom
 				end
 			end
 		end
 	end
 end
 
-function Monocle:link_edges()
-	for e in self.edges:values() do
+function Monocle:link_edges( light )
+	for e in light.edges:values() do
 		local x1,y1,x2,y2 = unpack(e[1])
 		next_candidate = tuple(x2,y2,x2,y2-1)
-		if x2 < self.x and self.edges[next_candidate] then
+		if x2 < light.x and light.edges[next_candidate] then
 			e[2] = next_candidate
-			self.edges[next_candidate][3] = e[1]
+			light.edges[next_candidate][3] = e[1]
 		end
 		next_candidate = tuple(x2,y2,x2,y2+1)
-		if x2 >= self.x and self.edges[next_candidate] then
+		if x2 >= light.x and light.edges[next_candidate] then
 			e[2] = next_candidate
-			self.edges[next_candidate][3] = e[1]
+			light.edges[next_candidate][3] = e[1]
 		end
 		next_candidate = tuple(x2,y2,x2+1,y2)
-		if y2 < self.y and self.edges[next_candidate] then
+		if y2 < light.y and light.edges[next_candidate] then
 			e[2] = next_candidate
-			self.edges[next_candidate][3] = e[1]
+			light.edges[next_candidate][3] = e[1]
 		end
 		next_candidate = tuple(x2,y2,x2-1,y2)
-		if y2 >= self.y and self.edges[next_candidate] then
+		if y2 >= light.y and light.edges[next_candidate] then
 			e[2] = next_candidate
-			self.edges[next_candidate][3] = e[1]
+			light.edges[next_candidate][3] = e[1]
 		end
 	end
 end
 
-function Monocle:add_projections()
+function Monocle:add_projections( light )
 	local edges_to_add = {}
-	for e in self.edges:values() do
+	for e in light.edges:values() do
 		local x1,y1,x2,y2 = unpack(e[1])
 		if not e.projection and not e.split then
 			--add Next
 			if not e[2] then
 				table.insert(edges_to_add, {e,x2,y2, true,
-								['distance'] = self.dist_points(self.x,self.y,x2,y2)})
+								['distance'] = self.dist_points(light.x,light.y,x2,y2)})
 			end
 			--add Previous
 			if not e[3] then
 				table.insert(edges_to_add, {e, x1,y1, false, 
-								['distance'] = self.dist_points(self.x,self.y,x1,y1)})
+								['distance'] = self.dist_points(light.x,light.y,x1,y1)})
 			end
 		end
 	end
@@ -253,19 +242,19 @@ function Monocle:add_projections()
 	table.sort( edges_to_add, function(a,b) return a['distance'] < b['distance'] end)
 
 	for _, e in ipairs(edges_to_add) do
-		if self.edges[e[1][1]] then
-			self:add_projection_edge(unpack(e))
+		if light.edges[e[1][1]] then
+			self:add_projection_edge( light, unpack(e))
 		end
 	end
 
 end
 
-function Monocle:add_projection_edge(e, x1,y1, isNext)
-	local borderX, borderY = self:get_border_intersection(x1,y1)
+function Monocle:add_projection_edge( light, e, x1,y1, isNext)
+	local borderX, borderY = self:get_border_intersection( light, x1,y1)
 	local dist2 = false
 	local closest_intersectionX, closest_intersectionY = false, false
 	local found_edge = false
-	for search_edge in self.edges:values() do
+	for search_edge in light.edges:values() do
 		local sx1,sy1,sx2,sy2 = unpack(search_edge[1])
 		if search_edge[1] ~= e[1] and not search_edge.projection then
 			local intersectX, intersectY = self:findIntersect(x1,y1,borderX,borderY,sx1,sy1,sx2,sy2,true,true)
@@ -279,7 +268,7 @@ function Monocle:add_projection_edge(e, x1,y1, isNext)
 			end
 		end
 	end
-	if not found_edge or self.edges[found_edge[1]].back then
+	if not found_edge or light.edges[found_edge[1]].back then
 		return false
 	else 
 		local sx1,sy1,sx2,sy2 = unpack(found_edge[1])
@@ -287,39 +276,39 @@ function Monocle:add_projection_edge(e, x1,y1, isNext)
 		if isNext then
 
 			if not found_edge[2] then
-				self:add_projection_edge(found_edge,sx2,sy2,true)
+				self:add_projection_edge( light, found_edge,sx2,sy2,true)
 			end
 
 			proj_edge = tuple(x1,y1,closest_intersectionX,closest_intersectionY)
-			self:add_edge(x1,y1,closest_intersectionX,closest_intersectionY, true)
+			self:add_edge(light, x1,y1,closest_intersectionX,closest_intersectionY, true)
 
 			if self.round(closest_intersectionX,5) == self.round(sx1,5) and self.round(closest_intersectionY,5) == self.round(sy1,5) then
 
-				self.edges[proj_edge][2] = found_edge[1]
-				self.edges[proj_edge][3] = e[1]
+				light.edges[proj_edge][2] = found_edge[1]
+				light.edges[proj_edge][3] = e[1]
 
 				found_edge[3] = proj_edge
 
 			else
 
 				new_edge = tuple(closest_intersectionX,closest_intersectionY,sx2,sy2)
-				self:add_edge(closest_intersectionX,closest_intersectionY,sx2,sy2, false, true)
+				self:add_edge(light, closest_intersectionX,closest_intersectionY,sx2,sy2, false, true)
 
 				new_edge2 = tuple(sx1,sy1,closest_intersectionX,closest_intersectionY)
-				self:add_edge(sx1,sy1,closest_intersectionX,closest_intersectionY, false, true, true)
+				self:add_edge(light, sx1,sy1,closest_intersectionX,closest_intersectionY, false, true, true)
 
-				self.edges[proj_edge][2] = new_edge
-				self.edges[proj_edge][3] = e[1]
+				light.edges[proj_edge][2] = new_edge
+				light.edges[proj_edge][3] = e[1]
 
-				self.edges[new_edge][3] = proj_edge
-				self.edges[new_edge][2] = found_edge[2]
+				light.edges[new_edge][3] = proj_edge
+				light.edges[new_edge][2] = found_edge[2]
 
-				self.edges[new_edge2][3] = false
-				self.edges[new_edge2][2] = false
+				light.edges[new_edge2][3] = false
+				light.edges[new_edge2][2] = false
 
-				self.edges[found_edge[1]] = nil
+				light.edges[found_edge[1]] = nil
 
-				for search_edge in self.edges:values() do
+				for search_edge in light.edges:values() do
 					if search_edge[3] == found_edge[1] then
 						search_edge[3] = new_edge2
 					end
@@ -333,42 +322,42 @@ function Monocle:add_projection_edge(e, x1,y1, isNext)
 		else
 
 			if not found_edge[3] then
-				self:add_projection_edge(found_edge,sx1,sy1,false)
+				self:add_projection_edge( light, found_edge,sx1,sy1,false)
 			end
 
 			proj_edge = tuple(closest_intersectionX,closest_intersectionY,x1,y1)
-			self:add_edge(closest_intersectionX,closest_intersectionY,x1,y1, true)
+			self:add_edge(light, closest_intersectionX,closest_intersectionY,x1,y1, true)
 
 			if self.round(closest_intersectionX,5) == self.round(sx1,5) and self.round(closest_intersectionY,5) == self.round(sy1,5) then
 
-				self.edges[proj_edge][2] = e[1]
-				self.edges[proj_edge][3] = found_edge[1]
+				light.edges[proj_edge][2] = e[1]
+				light.edges[proj_edge][3] = found_edge[1]
 
 				found_edge[2] = proj_edge
 
 			else
 
 				new_edge = tuple(sx1,sy1,closest_intersectionX,closest_intersectionY)
-				self:add_edge(sx1,sy1,closest_intersectionX,closest_intersectionY, false, true)
+				self:add_edge(light, sx1,sy1,closest_intersectionX,closest_intersectionY, false, true)
 
 				new_edge2 = tuple(closest_intersectionX,closest_intersectionY,sx2,sy2)
-				self:add_edge(closest_intersectionX,closest_intersectionY,sx2,sy2, false, true,true)
+				self:add_edge(light, closest_intersectionX,closest_intersectionY,sx2,sy2, false, true,true)
 
-				self.edges[proj_edge][3] = new_edge
-				self.edges[proj_edge][2] = e[1]
+				light.edges[proj_edge][3] = new_edge
+				light.edges[proj_edge][2] = e[1]
 
-				self.edges[new_edge][3] = found_edge[3]
-				self.edges[new_edge][2] = proj_edge
+				light.edges[new_edge][3] = found_edge[3]
+				light.edges[new_edge][2] = proj_edge
 
 				if found_edge[3] then
-					self.edges[found_edge[3]][2] = new_edge
+					light.edges[found_edge[3]][2] = new_edge
 				end
-				self.edges[new_edge2][3] = false
-				self.edges[new_edge2][2] = false
+				light.edges[new_edge2][3] = false
+				light.edges[new_edge2][2] = false
 
-				self.edges[found_edge[1]] = nil
+				light.edges[found_edge[1]] = nil
 
-				for search_edge in self.edges:values() do
+				for search_edge in light.edges:values() do
 					if search_edge[3] == found_edge[1] then
 						search_edge[3] = new_edge2
 					end
@@ -386,7 +375,7 @@ function Monocle:add_projection_edge(e, x1,y1, isNext)
 
 end
 
-function Monocle:draw_triangles( l )
+function Monocle:draw_triangles( light )
 	if self.useCanvas then
 		_lg.setCanvas(self.canvas)
 	end
@@ -397,18 +386,18 @@ function Monocle:draw_triangles( l )
 
 	--Increase this for large maps
 	local TOLERANCE = 500
-	local start = self:get_closest_edge()
+	local start = self:get_closest_edge( light )
 	local current_edge = start[1]
 	local count = 0
 
-	_lg.setColor( l.r, l.g, l.b, l.a )
+	_lg.setColor( light.r, light.g, light.b, light.a )
 	--_lg.setColor( 0, 255, 0, 255 )
 	repeat
 		local x1,y1,x2,y2 = unpack(current_edge)
-		_lg.triangle('fill', self.x*self.tileSize,self.y*self.tileSize,
+		_lg.triangle('fill', light.x*self.tileSize,light.y*self.tileSize,
 						x1*self.tileSize,y1*self.tileSize,x2*self.tileSize,y2*self.tileSize)
-		if self.edges[current_edge] then
-			current_edge = self.edges[current_edge][2]
+		if light.edges[current_edge] then
+			current_edge = light.edges[current_edge][2]
 		else
 			break
 		end
@@ -420,12 +409,12 @@ function Monocle:draw_triangles( l )
 	end
 end
 
-function Monocle:get_closest_edge()
+function Monocle:get_closest_edge( light )
 	local closest = false
 	local dist = false
-	for e in self.edges:values() do
+	for e in light.edges:values() do
 		local x1,y1,x2,y2 = unpack(e[1])
-		new_dist = self.distPointToLine(self.x,self.y,x1,y1,x2,y2)
+		new_dist = self.distPointToLine(light.x,light.y,x1,y1,x2,y2)
 		if not closest or new_dist<dist then
 			dist = new_dist
 			closest = e
@@ -434,27 +423,27 @@ function Monocle:get_closest_edge()
 	return closest
 end
 
-function Monocle:draw_vision_edge()
+function Monocle:draw_vision_edge( light )
 	--this is the maximum number of cycles.
 	--used to prevent infinite loops.
 	local TOLERANCE = 500
 
-	local start = self:get_closest_edge()
+	local start = self:get_closest_edge( light )
 	local current_edge = start[1]
 	local count = 0
 
 	local x1,y1,x2,y2 = unpack(current_edge)
 	_lg.setColor(255,255,0)
-	_lg.line(self.x*tileSize,self.y*tileSize,x1*tileSize,y1*tileSize)
-	_lg.line(self.x*tileSize,self.y*tileSize,x2*tileSize,y2*tileSize)
+	_lg.line(light.x*tileSize,light.y*tileSize,x1*tileSize,y1*tileSize)
+	_lg.line(light.x*tileSize,light.y*tileSize,x2*tileSize,y2*tileSize)
 
 	_lg.setColor(255,0,0)
 
 	repeat
 		local x1,y1,x2,y2 = unpack(current_edge)
 		_lg.line(x1*tileSize,y1*tileSize,x2*tileSize,y2*tileSize)
-		if self.edges[current_edge] and self.edges[current_edge][2] then
-			current_edge = self.edges[current_edge][2]
+		if light.edges[current_edge] and light.edges[current_edge][2] then
+			current_edge = light.edges[current_edge][2]
 		else
 			break
 		end
@@ -463,21 +452,21 @@ function Monocle:draw_vision_edge()
 	_lg.setColor(255,255,255)
 end
 
-function Monocle:add_edge(x1,y1,x2,y2,is_proj, split, back)
+function Monocle:add_edge( light, x1,y1,x2,y2,is_proj, split, back)
 	local back = back
 	local split = split or false
 	local is_proj = is_proj or false
 	local tup = tuple(x1,y1,x2,y2)
-	local dist = self.distPointToLine(self.x,self.y,x1,y1,x2,y2)
-	self.edges[tup] = {tup, false, false, 
+	local dist = self.distPointToLine(light.x,light.y,x1,y1,x2,y2)
+	light.edges[tup] = {tup, false, false, 
 						['projection'] = is_proj, 
 						['distance'] = dist,
 						['split'] = split,
 						['back'] = back}
 end
 
-function Monocle:draw_debug()
-	for e in self.edges:values() do
+function Monocle:draw_debug( light )
+	for e in light.edges:values() do
 
 		local x1,y1,x2,y2 = unpack(e[1])
 
@@ -500,32 +489,32 @@ function Monocle:draw_debug()
 			_lg.circle('fill',(2*x1/3 + x2/3) * tileSize,(2*y1/3 + y2/3) * tileSize,2)
 		end
 	end
-	self:draw_vision_edge()
+	self:draw_vision_edge( light )
 end
 
-function Monocle:get_border_intersection(x1,y1)
+function Monocle:get_border_intersection(light, x1,y1)
 	grid_height = #self.grid
 	grid_width = #self.grid[1]
 
-	if self.x <= x1 then
-		local intersectX, intersectY = self:findIntersect(self.x,self.y,x1,y1,grid_width, 0, grid_width, grid_height)
+	if light.x <= x1 then
+		local intersectX, intersectY = self:findIntersect(light.x,light.y,x1,y1,grid_width, 0, grid_width, grid_height)
 		if intersectX then 
 			return intersectX, intersectY
 		end
-	elseif self.x > x1 then
-		local intersectX, intersectY = self:findIntersect(self.x,self.y,x1,y1,0, 0, 0, grid_height)
+	elseif light.x > x1 then
+		local intersectX, intersectY = self:findIntersect(light.x,light.y,x1,y1,0, 0, 0, grid_height)
 		if intersectX then 
 			return intersectX, intersectY
 		end
 	end
 
-	if self.y <= y1 then
-		local intersectX, intersectY = self:findIntersect(self.x,self.y,x1,y1,0, grid_height, grid_width, grid_height)
+	if light.y <= y1 then
+		local intersectX, intersectY = self:findIntersect(light.x,light.y,x1,y1,0, grid_height, grid_width, grid_height)
 		if intersectX then 
 			return intersectX, intersectY
 		end
-	elseif self.y > y1 then
-		local intersectX, intersectY = self:findIntersect(self.x,self.y,x1,y1,0, 0, grid_width, 0)
+	elseif light.y > y1 then
+		local intersectX, intersectY = self:findIntersect(light.x,light.y,x1,y1,0, 0, grid_width, 0)
 		if intersectX then 
 			return intersectX, intersectY
 		end
