@@ -13,7 +13,7 @@ function love.load()
 	player = require('player')
 	level = GenerateMap(map_width,map_height)
 	DEBUG = false
-	monocle:init( false, 0,0,0,230 )
+	monocle:init( true, 0,0,0,230 )
 	monocle:setGrid( level, tileSize )
 	playerlight = monocle:addLight( 2, 2, 255, 255, 255, 100)
 end
@@ -47,10 +47,15 @@ end
 function toggleBlur()
 	if not blur then
 		monocle:setBlur( 1 )
-		blur = true
+		blur = 1
 	else
-		blur = false
-		monocle:setBlur( 0 )
+		blur = blur + 1
+		if blur == 5 then
+			monocle:setBlur( 0 )
+			blur = 0
+		else
+			monocle:setBlur( blur )
+		end
 	end
 end
 
@@ -86,7 +91,7 @@ function love.draw()
 	_lg.print('Press "n" to toggle Monocle mode',0,24)
 	_lg.print('Press "t" to teleport player to (3,3)',0,36)
 	_lg.print('Press "l" to toggle additional light(s)',0,48)
-	_lg.print('Press "b" to toggle blur',0,60)
+	_lg.print('Press "b" to control blur',0,60)
 end
 
 function love.keypressed(key,code)
