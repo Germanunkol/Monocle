@@ -19,6 +19,8 @@ function love.load()
 end
 
 function love.update(dt)
+
+	playerlight.r = 255*(0.5 + 0.5*math.sin(love.timer.getTime()))
 	player:update(dt, level)
 	playerlight.x, playerlight.y = player.x, player.y
 	monocle:update( DEBUG )
@@ -87,11 +89,11 @@ function love.draw()
 	
 	_lg.setColor(255,255,255)
 	_lg.print('X:' .. player.x .. ';Y:' .. player.y, 0,0)
-	_lg.print('Press "d" to toggle debug mode',0,12)
-	_lg.print('Press "n" to toggle Monocle mode',0,24)
-	_lg.print('Press "t" to teleport player to (3,3)',0,36)
-	_lg.print('Press "l" to toggle additional light(s)',0,48)
-	_lg.print('Press "b" to control blur',0,60)
+	_lg.print('Press "D" to toggle debug mode',0,12)
+	_lg.print('Press "N" to toggle Monocle mode',0,24)
+	_lg.print('Press "T" to teleport player to (3,3)',0,36)
+	_lg.print('Press "L" to toggle additional light(s)',0,48)
+	_lg.print('Press "B" to control blur',0,60)
 end
 
 function love.keypressed(key,code)
