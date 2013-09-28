@@ -81,6 +81,7 @@ function Monocle:removeLight( light )	-- find light in list and remove:
 		end
 	end
 end
+local prevMode
 
 function Monocle:update( debug )
 	
@@ -137,6 +138,10 @@ function Monocle:update( debug )
 			--_lg.rectangle('fill', 0, 0, _lg.getWidth(), _lg.getHeight())
 			_lg.setPixelEffect( self.gaussianH )
 			_lg.setColor(255,255,255,255)
+			
+	prevMode = _lg.getBlendMode()
+	_lg.setBlendMode('premultiplied')
+			
 			_lg.draw(self.canvas)
 			_lg.setPixelEffect()
 			--self.gaussCanvas:getImageData():encode("gaussianH.png")
@@ -152,13 +157,15 @@ function Monocle:update( debug )
 			_lg.setCanvas()
 			--self.canvas:getImageData():encode("after.png")
 			--love.event.quit()
+	_lg.setBlendMode(prevMode)
 		end
 	end
 end
 
 function Monocle:draw()
 	love.graphics.setColor(255, 255, 255, 255)
-	--_lg.setBlendMode('multiplicative')
+	prevMode = _lg.getBlendMode()
+	_lg.setBlendMode('premultiplied')
 	if self.debug then
 		self:draw_debug( self.lights[1] )
 	else
@@ -172,7 +179,7 @@ function Monocle:draw()
 			end
 		end
 	end
-	--_lg.setBlendMode('alpha')
+	_lg.setBlendMode(prevMode)
 end
 
 function Monocle:get_forward_edges( light )
