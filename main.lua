@@ -13,7 +13,7 @@ function love.load()
 	player = require('player')
 	level = GenerateMap(map_width,map_height)
 	DEBUG = false
-	monocle:init( true, 0,0,0,230 )
+	monocle:init( true, 0,0,0,100 )
 	monocle:setGrid( level, tileSize )
 	playerlight = monocle:addLight( 2, 2, 255, 255, 255, 100)
 end

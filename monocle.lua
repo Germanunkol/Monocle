@@ -400,7 +400,12 @@ function Monocle:draw_triangles( light )
 	_lg.setColor( light.r, light.g, light.b, light.a )
 	--_lg.setColor( 0, 255, 0, 255 )
 	repeat
-		local x1,y1,x2,y2 = unpack(current_edge)
+		local x1,y1,x2,y2
+		if current_edge then
+			x1,y1,x2,y2 = unpack(current_edge)
+		else
+			break
+		end
 		_lg.triangle('fill', light.x*self.tileSize,light.y*self.tileSize,
 						x1*self.tileSize,y1*self.tileSize,x2*self.tileSize,y2*self.tileSize)
 		if light.edges[current_edge] then
@@ -447,7 +452,12 @@ function Monocle:draw_vision_edge( light )
 	_lg.setColor(255,0,0)
 
 	repeat
-		local x1,y1,x2,y2 = unpack(current_edge)
+		local x1,y1,x2,y2
+		if current_edge then
+			x1,y1,x2,y2 = unpack(current_edge)
+		else
+			break
+		end
 		_lg.line(x1*tileSize,y1*tileSize,x2*tileSize,y2*tileSize)
 		if light.edges[current_edge] and light.edges[current_edge][2] then
 			current_edge = light.edges[current_edge][2]
@@ -458,6 +468,7 @@ function Monocle:draw_vision_edge( light )
 	until current_edge == start[1] or count > TOLERANCE
 	_lg.setColor(255,255,255)
 end
+
 
 function Monocle:add_edge( light, x1,y1,x2,y2,is_proj, split, back)
 	local back = back
