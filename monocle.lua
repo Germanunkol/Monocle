@@ -164,22 +164,22 @@ end
 
 function Monocle:draw()
 	love.graphics.setColor(255, 255, 255, 255)
-	prevMode = _lg.getBlendMode()
-	_lg.setBlendMode('premultiplied')
 	if self.debug then
 		self:draw_debug( self.lights[1] )
 	else
 		-- If a canvas has already been calculated, then use this.
 		-- Otherwise, draw triangles:
 		if self.useCanvas then
+			prevMode = _lg.getBlendMode()
+			_lg.setBlendMode('premultiplied')
 			_lg.draw( self.canvas )
+			_lg.setBlendMode(prevMode)
 		else
 			for k = 1, #self.lights do
 				self:draw_triangles( self.lights[k] )
 			end
 		end
 	end
-	_lg.setBlendMode(prevMode)
 end
 
 function Monocle:get_forward_edges( light )
